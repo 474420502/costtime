@@ -14,34 +14,48 @@ var costlog = func() *log.Logger {
 	return l
 }()
 
-var colors = []string{"\033[32m%d\033[0m", "\033[36m%d\033[0m", "\033[34m%d\033[0m", "\033[31m%d\033[0m"}
+var colors = []string{"\033[32m%d\033[0m", "\033[34m%d\033[0m", "\033[31m%d\033[0m", "\033[31:43m\033[05m%d\033[0m"}
+var condition func(cost time.Duration) bool
 
-// CostTime 计算消耗的时间
-func CostTime(name string, run func()) {
+// SetLogCondition 设置输出cost条件
+func SetLogCondition(cond func(cost time.Duration) bool) {
+	condition = cond
+}
 
-	pc, file, line, _ := runtime.Caller(1)
-	fname := runtime.FuncForPC(pc).Name()
+// Cost 里面计算消耗时间
+func Cost(run func()) {
 
-	var i, count int
-	i = strings.LastIndexFunc(fname, func(c rune) bool {
-		if c == '.' || c == '/' {
-			count++
-		}
-		if count >= 2 {
-			return true
-		}
-		return false
-	})
-	fname = fname[i+1:]
-
-	i = strings.LastIndexByte(file, '/')
-	file = file[i+1:]
+	file, line, funcName := getRuntimeInfo()
 
 	now := time.Now()
 	run()
+	cost, coststr := countCostString(now)
+	if condition != nil {
+		if !condition(cost) {
+			return
+		}
+	}
+	costlog.Printf("%s:%d(%s) cost(%s ms)", file, line, funcName, coststr)
+}
+
+// CostLog 计算消耗的时间
+func CostLog(name string, run func()) {
+	file, line, funcName := getRuntimeInfo()
+
+	now := time.Now()
+	run()
+	cost, coststr := countCostString(now)
+	if condition != nil {
+		if !condition(cost) {
+			return
+		}
+	}
+	costlog.Printf("%s:%d(%s) cost(%s ms): %s", file, line, funcName, coststr, name)
+}
+
+func countCostString(now time.Time) (time.Duration, string) {
 	end := time.Now()
 
-	var coststr string
 	var selcolor string
 	cost := end.Sub(now)
 	switch {
@@ -54,6 +68,19 @@ func CostTime(name string, run func()) {
 	default:
 		selcolor = colors[3]
 	}
-	coststr = fmt.Sprintf(selcolor, cost.Milliseconds())
-	costlog.Printf("%s:%d(%s) cost(%s ms): %s", file, line, fname, coststr, name)
+	return cost, fmt.Sprintf(selcolor, cost.Milliseconds())
+}
+
+func getRuntimeInfo() (file string, line int, funcName string) {
+	pc, file, line, _ := runtime.Caller(2)
+	fname := runtime.FuncForPC(pc).Name()
+
+	var i int
+	i = strings.LastIndexByte(fname, '.')
+	fname = fname[i+1:]
+
+	i = strings.LastIndexByte(file, '/')
+	file = file[i+1:]
+
+	return file, line, funcName
 }

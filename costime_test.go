@@ -6,16 +6,20 @@ import (
 )
 
 func Test(t *testing.T) {
-	CostTime("name string", func() {
+	CostLog("name string", func() {
 		time.Sleep(1)
 	})
 
-	CostTime("name string", func() {
+	CostLog("name string", func() {
 		time.Sleep(time.Millisecond * 100)
 	})
 
-	CostTime("name string", func() {
+	CostLog("name string", func() {
 		time.Sleep(time.Millisecond * 1000)
+	})
+
+	CostLog("name string", func() {
+		time.Sleep(time.Millisecond * 10000)
 	})
 
 }

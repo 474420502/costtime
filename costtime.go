@@ -14,7 +14,7 @@ var costlog = func() *log.Logger {
 	return l
 }()
 
-var colors = []string{"\033[32m%d\033[0m", "\033[34m%d\033[0m", "\033[31m%d\033[0m", "\033[31:43m\033[05m%d\033[0m"}
+var colors = []string{"\033[32m%d\033[0m", "\033[34m%d\033[0m", "\033[31m%d\033[0m", "\033[31m\033[05m%d\033[0m"}
 var condition func(cost time.Duration) bool
 
 // SetLogCondition 设置输出cost条件

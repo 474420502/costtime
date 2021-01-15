@@ -9,16 +9,20 @@ import (
 	"time"
 )
 
+// ConditionFunc 日志输出条件判断函数
+type ConditionFunc func(cost time.Duration) bool
+
 var costlog = func() *log.Logger {
 	l := log.New(os.Stderr, "", log.Ldate|log.Ltime)
 	return l
 }()
 
-var colors = []string{"\033[32m%d\033[0m", "\033[34m%d\033[0m", "\033[31m%d\033[0m", "\033[31:43m\033[05m%d\033[0m"}
-var condition func(cost time.Duration) bool
+var colors = []string{"\033[32m%d\033[0m", "\033[34m%d\033[0m", "\033[31m%d\033[0m", "\033[31m\033[05m%d\033[0m"}
+
+var condition ConditionFunc
 
 // SetLogCondition 设置输出cost条件
-func SetLogCondition(cond func(cost time.Duration) bool) {
+func SetLogCondition(cond ConditionFunc) {
 	condition = cond
 }
 
@@ -73,11 +77,11 @@ func countCostString(now time.Time) (time.Duration, string) {
 
 func getRuntimeInfo() (file string, line int, funcName string) {
 	pc, file, line, _ := runtime.Caller(2)
-	fname := runtime.FuncForPC(pc).Name()
+	funcName = runtime.FuncForPC(pc).Name()
 
 	var i int
-	i = strings.LastIndexByte(fname, '.')
-	fname = fname[i+1:]
+	i = strings.LastIndexByte(funcName, '.')
+	funcName = funcName[i+1:]
 
 	i = strings.LastIndexByte(file, '/')
 	file = file[i+1:]

@@ -31,8 +31,7 @@ func CostTime(name string, run func()) {
 	}
 
 	now := time.Now()
-	costlog.Printf("%s:%d(%s %s): start %s", file, line, fname, name, now.Local().Format("2006-01-02 15:04:05"))
 	run()
 	end := time.Now()
-	costlog.Printf("%s:%d(%s %s): end %s, cost: %d ms", file, line, fname, name, end.Local().Format("2006-01-02 15:04:05"), end.Sub(now).Milliseconds())
+	costlog.Printf("%s:%d(%s) costtime(%d ms): %s", file, line, fname, end.Sub(now).Milliseconds(), name)
 }

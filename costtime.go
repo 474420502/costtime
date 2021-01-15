@@ -73,7 +73,7 @@ func countCostString(now time.Time) (time.Duration, string) {
 
 func getRuntimeInfo() (file string, line int, funcName string) {
 	pc, file, line, _ := runtime.Caller(2)
-	funcName := runtime.FuncForPC(pc).Name()
+	funcName = runtime.FuncForPC(pc).Name()
 
 	var i int
 	i = strings.LastIndexByte(funcName, '.')

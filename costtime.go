@@ -9,16 +9,20 @@ import (
 	"time"
 )
 
+// ConditionFunc 日志输出条件判断函数
+type ConditionFunc func(cost time.Duration) bool
+
 var costlog = func() *log.Logger {
 	l := log.New(os.Stderr, "", log.Ldate|log.Ltime)
 	return l
 }()
 
 var colors = []string{"\033[32m%d\033[0m", "\033[34m%d\033[0m", "\033[31m%d\033[0m", "\033[31m\033[05m%d\033[0m"}
-var condition func(cost time.Duration) bool
+
+var condition ConditionFunc
 
 // SetLogCondition 设置输出cost条件
-func SetLogCondition(cond func(cost time.Duration) bool) {
+func SetLogCondition(cond ConditionFunc) {
 	condition = cond
 }
 

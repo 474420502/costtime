@@ -22,8 +22,16 @@ func CostTime(name string, run func()) {
 	pc, file, line, _ := runtime.Caller(1)
 	fname := runtime.FuncForPC(pc).Name()
 
-	var i int
-	i = strings.LastIndexByte(fname, '/')
+	var i, count int
+	i = strings.LastIndexFunc(fname, func(c rune) bool {
+		if c == '.' || c == '/' {
+			count++
+		}
+		if count >= 2 {
+			return true
+		}
+		return false
+	})
 	fname = fname[i+1:]
 
 	i = strings.LastIndexByte(file, '/')

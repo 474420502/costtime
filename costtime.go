@@ -14,7 +14,7 @@ var costlog = func() *log.Logger {
 	return l
 }()
 
-var colors = []string{"\033[32m%d\033[0m]", "\033[36m%d\033[0m]", "\033[34m%d\033[0m]", "\033[31m%d\033[0m]"}
+var colors = []string{"\033[32m%d\033[0m", "\033[36m%d\033[0m", "\033[34m%d\033[0m", "\033[31m%d\033[0m"}
 
 // CostTime 计算消耗的时间
 func CostTime(name string, run func()) {
@@ -23,7 +23,7 @@ func CostTime(name string, run func()) {
 	fname := runtime.FuncForPC(pc).Name()
 
 	var i int
-	i = strings.LastIndexByte(file, '/')
+	i = strings.LastIndexByte(fname, '/')
 	fname = fname[i+1:]
 
 	i = strings.LastIndexByte(file, '/')

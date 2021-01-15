@@ -34,16 +34,18 @@ func CostTime(name string, run func()) {
 	end := time.Now()
 
 	var coststr string
+	var selcolor string
 	cost := end.Sub(now)
 	switch {
 	case cost < time.Millisecond*100:
-		coststr = fmt.Sprintf(colors[0], cost)
+		selcolor = colors[0]
 	case cost < time.Second:
-		coststr = fmt.Sprintf(colors[1], cost)
+		selcolor = colors[1]
 	case cost < time.Second*10:
-		coststr = fmt.Sprintf(colors[2], cost)
+		selcolor = colors[2]
 	default:
-		coststr = fmt.Sprintf(colors[3], cost)
+		selcolor = colors[3]
 	}
+	selcolor = fmt.Sprintf(selcolor, cost.Milliseconds())
 	costlog.Printf("%s:%d(%s) cost(%s ms): %s", file, line, fname, coststr, name)
 }

@@ -46,6 +46,6 @@ func CostTime(name string, run func()) {
 	default:
 		selcolor = colors[3]
 	}
-	selcolor = fmt.Sprintf(selcolor, cost.Milliseconds())
+	coststr = fmt.Sprintf(selcolor, cost.Milliseconds())
 	costlog.Printf("%s:%d(%s) cost(%s ms): %s", file, line, fname, coststr, name)
 }

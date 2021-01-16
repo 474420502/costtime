@@ -146,7 +146,7 @@ func countCostColor(now time.Time) (time.Duration, string) {
 }
 
 func getRuntimeInfo() (file string, line int, funcName string) {
-	pc, file, line, _ := runtime.Caller(2)
+	pc, file, line, _ := runtime.Caller(3)
 	funcName = runtime.FuncForPC(pc).Name()
 
 	var i int

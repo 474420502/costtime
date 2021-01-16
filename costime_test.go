@@ -26,6 +26,10 @@ func TestBase(t *testing.T) {
 	})
 
 	defaultCost.CostLog("name string", func() {
+		time.Sleep(time.Millisecond * 200)
+	})
+
+	defaultCost.CostLog("name string", func() {
 		time.Sleep(time.Millisecond * 1000)
 	})
 

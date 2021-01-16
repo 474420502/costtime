@@ -41,7 +41,62 @@ var defaultCost *CostTime = New()
 type ConditionFunc func(cost time.Duration) bool
 
 // var c.loglevel int64 = -1
-var colors = []string{"\033[32m%#v\033[0m", "\033[34m%#v\033[0m", "\033[31m%#v\033[0m", "\033[31m\033[05m%#v\033[0m"}
+// var colors = []string{"\033[32m%v\033[0m", "\033[34m%v\033[0m", "\033[31m%v\033[0m", "\033[31m\033[05m%v\033[0m"}
+
+type color struct {
+	level    int64
+	value    time.Duration
+	colorstr string
+}
+
+var colorlevels []*color = []*color{
+	{
+		level:    0,
+		colorstr: "\033[32m%v\033[0m", //绿色
+		value:    time.Millisecond * 100,
+	},
+	{
+		level:    1,
+		colorstr: "\033[36m%v\033[0m", //天蓝色
+		value:    time.Millisecond * 500,
+	},
+	{
+		level:    2,
+		colorstr: "\033[34m%v\033[0m", //蓝色
+		value:    time.Millisecond * 1000,
+	},
+	{
+		level:    3,
+		colorstr: "\033[33m%v\033[0m", //黄色
+		value:    time.Millisecond * 2000,
+	},
+	{
+		level:    4,
+		colorstr: "\033[33m\033[05m%v\033[0m", //黄色闪烁
+		value:    time.Millisecond * 4000,
+	},
+
+	{
+		level:    5,
+		colorstr: "\033[31m%v\033[0m", //红色
+		value:    time.Millisecond * 8000,
+	},
+
+	{
+		level:    6,
+		colorstr: "\033[31m\033[05m%v\033[0m", //红色闪烁
+		value:    time.Millisecond * 16000,
+	},
+}
+
+func checkLevel(t time.Duration) *color {
+	for _, c := range colorlevels {
+		if t <= c.value {
+			return c
+		}
+	}
+	return colorlevels[len(colorlevels)-1]
+}
 
 // SetLogCondition 设置输出cost条件
 func SetLogCondition(cond ConditionFunc) {
@@ -78,15 +133,13 @@ func (c *CostTime) Cost(run func()) {
 	coststr := fmt.Sprintf(selcolor, cost.Milliseconds())
 	var prefix string
 	if atomic.LoadInt64(&c.loglevel) > 0 {
-		for i := int64(0); i < c.loglevel; i++ {
-			for i := int64(0); i < c.loglevel-1; i++ {
-				prefix += "  "
-			}
-			prefix += "┌─ "
+		for i := int64(0); i < c.loglevel-1; i++ {
+			prefix += "  "
 		}
-		c.costlogNoDate.Printf("%s%s:%d(%s) cost(%s ms)", prefix, file, line, funcName, coststr)
+		prefix += fmt.Sprintf(selcolor, "● ")
+		c.costlogNoDate.Printf("%s%s:%d(%s %s ms)", prefix, file, line, funcName, coststr)
 	} else {
-		c.costlog.Printf("%s%s:%d(%s) cost(%s ms)", prefix, file, line, funcName, coststr)
+		c.costlog.Printf("%s%s:%d(%s %s ms)", prefix, file, line, funcName, coststr)
 	}
 }
 
@@ -112,37 +165,25 @@ func (c *CostTime) CostLog(name string, run func()) {
 			return
 		}
 	}
+
 	coststr := fmt.Sprintf(selcolor, cost.Milliseconds())
 	var prefix string
 	if atomic.LoadInt64(&c.loglevel) > 0 {
-		for i := int64(0); i < c.loglevel; i++ {
-			for i := int64(0); i < c.loglevel-1; i++ {
-				prefix += "  "
-			}
-			prefix += "┌─ "
+
+		for i := int64(0); i < c.loglevel-1; i++ {
+			prefix += "  "
 		}
-		c.costlogNoDate.Printf("%s%s:%d(%s) cost(%s ms):%s", prefix, file, line, funcName, coststr, name)
+		prefix += fmt.Sprintf(selcolor, "● ")
+
+		c.costlogNoDate.Printf("%s%s:%d(%s %s ms): %s", prefix, file, line, funcName, coststr, name)
 	} else {
-		c.costlog.Printf("%s%s:%d(%s) cost(%s ms):%s", prefix, file, line, funcName, coststr, name)
+		c.costlog.Printf("%s%s:%d(%s %s ms): %s", prefix, file, line, funcName, coststr, name)
 	}
 }
 
 func countCostColor(now time.Time) (time.Duration, string) {
-	end := time.Now()
-
-	var selcolor string
-	cost := end.Sub(now)
-	switch {
-	case cost < time.Millisecond*100:
-		selcolor = colors[0]
-	case cost < time.Second:
-		selcolor = colors[1]
-	case cost < time.Second*10:
-		selcolor = colors[2]
-	default:
-		selcolor = colors[3]
-	}
-	return cost, selcolor // fmt.Sprintf(selcolor, cost.Milliseconds())
+	cost := time.Now().Sub(now)
+	return cost, checkLevel(cost).colorstr // fmt.Sprintf(selcolor, cost.Milliseconds())
 }
 
 func getRuntimeInfo() (file string, line int, funcName string) {

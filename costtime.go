@@ -11,10 +11,15 @@ import (
 	"time"
 )
 
+// CostTime 消费时间基本结构
 type CostTime struct {
-	loglevel  int64
+	loglevel int64
+	logfirst int64
+
+	eventCost EventFunc
 	condition ConditionFunc
 
+	logprefix     string
 	costlog       *log.Logger
 	costlogNoDate *log.Logger
 }
@@ -35,10 +40,11 @@ func New() *CostTime {
 	return c
 }
 
-var defaultCost *CostTime = New()
-
 // ConditionFunc 日志输出条件判断函数
 type ConditionFunc func(cost time.Duration) bool
+
+// EventFunc 日志输出条件判断函数
+type EventFunc func(cost time.Duration)
 
 // var c.loglevel int64 = -1
 // var colors = []string{"\033[32m%v\033[0m", "\033[34m%v\033[0m", "\033[31m%v\033[0m", "\033[31m\033[05m%v\033[0m"}
@@ -98,19 +104,14 @@ func checkLevel(t time.Duration) *color {
 	return colorlevels[len(colorlevels)-1]
 }
 
-// SetLogCondition 设置输出cost条件
-func SetLogCondition(cond ConditionFunc) {
-	defaultCost.SetLogCondition(cond)
+// SetEeventCost 设置输出cost事件. 可以做邮件通知. 钉釘等办公通知
+func (c *CostTime) SetEeventCost(event EventFunc) {
+	c.eventCost = event
 }
 
 // SetLogCondition 设置输出cost条件
 func (c *CostTime) SetLogCondition(cond ConditionFunc) {
 	c.condition = cond
-}
-
-// Cost 里面计算消耗时间
-func Cost(run func()) {
-	defaultCost.Cost(run)
 }
 
 // Cost 里面计算消耗时间
@@ -133,19 +134,30 @@ func (c *CostTime) Cost(run func()) {
 	coststr := fmt.Sprintf(selcolor, cost.Milliseconds())
 	var prefix string
 	if atomic.LoadInt64(&c.loglevel) > 0 {
-		for i := int64(0); i < c.loglevel-1; i++ {
-			prefix += "  "
+		lf := atomic.AddInt64(&c.logfirst, 1)
+		var logprefix string
+		if lf == 1 {
+			logprefix = "┌─"
+		} else {
+			logprefix = "├─"
 		}
+
+		for i := int64(0); i < c.loglevel-1; i++ {
+			logprefix += "──"
+		}
+		logprefix += " "
+
+		c.costlogNoDate.SetPrefix(logprefix)
 		prefix += fmt.Sprintf(selcolor, "● ")
 		c.costlogNoDate.Printf("%s%s:%d(%s %s ms)", prefix, file, line, funcName, coststr)
 	} else {
 		c.costlog.Printf("%s%s:%d(%s %s ms)", prefix, file, line, funcName, coststr)
+		atomic.StoreInt64(&c.logfirst, 0)
 	}
-}
 
-// CostLog 计算消耗的时间
-func CostLog(name string, run func()) {
-	defaultCost.CostLog(name, run)
+	if c.eventCost != nil {
+		c.eventCost(cost)
+	}
 }
 
 // CostLog 计算消耗的时间
@@ -169,15 +181,29 @@ func (c *CostTime) CostLog(name string, run func()) {
 	coststr := fmt.Sprintf(selcolor, cost.Milliseconds())
 	var prefix string
 	if atomic.LoadInt64(&c.loglevel) > 0 {
+		lf := atomic.AddInt64(&c.logfirst, 1)
+		var logprefix string
+		if lf == 1 {
+			logprefix = "┌─"
+		} else {
+			logprefix = "├─"
+		}
 
 		for i := int64(0); i < c.loglevel-1; i++ {
-			prefix += "  "
+			logprefix += "──"
 		}
-		prefix += fmt.Sprintf(selcolor, "● ")
+		logprefix += " "
 
+		c.costlogNoDate.SetPrefix(logprefix)
+		prefix += fmt.Sprintf(selcolor, "● ")
 		c.costlogNoDate.Printf("%s%s:%d(%s %s ms): %s", prefix, file, line, funcName, coststr, name)
 	} else {
 		c.costlog.Printf("%s%s:%d(%s %s ms): %s", prefix, file, line, funcName, coststr, name)
+		atomic.StoreInt64(&c.logfirst, 0)
+	}
+
+	if c.eventCost != nil {
+		c.eventCost(cost)
 	}
 }
 

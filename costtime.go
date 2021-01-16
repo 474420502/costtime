@@ -22,6 +22,8 @@ type CostTime struct {
 	logprefix     string
 	costlog       *log.Logger
 	costlogNoDate *log.Logger
+
+	colors []*color
 }
 
 // New 创建一个新Cost. 每个协程里都要创建独立一个
@@ -37,10 +39,50 @@ func New() *CostTime {
 		l := log.New(os.Stderr, "", log.Ltime)
 		return l
 	}()
+
+	c.colors = []*color{
+		{
+			level:    0,
+			colorstr: "\033[32m%v\033[0m", //绿色
+			value:    time.Millisecond * 100,
+		},
+		{
+			level:    1,
+			colorstr: "\033[36m%v\033[0m", //天蓝色
+			value:    time.Millisecond * 500,
+		},
+		{
+			level:    2,
+			colorstr: "\033[34m%v\033[0m", //蓝色
+			value:    time.Millisecond * 1000,
+		},
+		{
+			level:    3,
+			colorstr: "\033[33m%v\033[0m", //黄色
+			value:    time.Millisecond * 2000,
+		},
+		{
+			level:    4,
+			colorstr: "\033[33m\033[05m%v\033[0m", //黄色闪烁
+			value:    time.Millisecond * 4000,
+		},
+
+		{
+			level:    5,
+			colorstr: "\033[31m%v\033[0m", //红色
+			value:    time.Millisecond * 8000,
+		},
+
+		{
+			level:    6,
+			colorstr: "\033[31m\033[05m%v\033[0m", //红色闪烁
+			value:    time.Millisecond * 16000,
+		},
+	}
 	return c
 }
 
-// ConditionFunc 日志输出条件判断函数
+// ConditionFunc 日志输出条件判断函数. 返回true输出. false 不输出
 type ConditionFunc func(cost time.Duration) bool
 
 // EventFunc 日志输出条件判断函数
@@ -55,53 +97,18 @@ type color struct {
 	colorstr string
 }
 
-var colorlevels []*color = []*color{
-	{
-		level:    0,
-		colorstr: "\033[32m%v\033[0m", //绿色
-		value:    time.Millisecond * 100,
-	},
-	{
-		level:    1,
-		colorstr: "\033[36m%v\033[0m", //天蓝色
-		value:    time.Millisecond * 500,
-	},
-	{
-		level:    2,
-		colorstr: "\033[34m%v\033[0m", //蓝色
-		value:    time.Millisecond * 1000,
-	},
-	{
-		level:    3,
-		colorstr: "\033[33m%v\033[0m", //黄色
-		value:    time.Millisecond * 2000,
-	},
-	{
-		level:    4,
-		colorstr: "\033[33m\033[05m%v\033[0m", //黄色闪烁
-		value:    time.Millisecond * 4000,
-	},
-
-	{
-		level:    5,
-		colorstr: "\033[31m%v\033[0m", //红色
-		value:    time.Millisecond * 8000,
-	},
-
-	{
-		level:    6,
-		colorstr: "\033[31m\033[05m%v\033[0m", //红色闪烁
-		value:    time.Millisecond * 16000,
-	},
-}
-
-func checkLevel(t time.Duration) *color {
-	for _, c := range colorlevels {
-		if t <= c.value {
-			return c
+func (c *CostTime) checkLevel(t time.Duration) *color {
+	for _, color := range c.colors {
+		if t <= color.value {
+			return color
 		}
 	}
-	return colorlevels[len(colorlevels)-1]
+	return c.colors[len(c.colors)-1]
+}
+
+// SetLevel 设置自定义level输出一共7级. 小于等于value值就显示该级的颜色. 如: for 0 - 7 value +500ms
+func (c *CostTime) SetLevel(level int64, value time.Duration) {
+	c.colors[level].value = value
 }
 
 // SetEeventCost 设置输出cost事件. 可以做邮件通知. 钉釘等办公通知
@@ -109,7 +116,7 @@ func (c *CostTime) SetEeventCost(event EventFunc) {
 	c.eventCost = event
 }
 
-// SetLogCondition 设置输出cost条件
+// SetLogCondition 设置输出cost条件. 如. 大于500ms才输出. 一般配合 Cond后缀函数 使用. 默认全部输出
 func (c *CostTime) SetLogCondition(cond ConditionFunc) {
 	c.condition = cond
 }
@@ -125,7 +132,7 @@ func (c *CostTime) Cost(run func()) {
 	file, line, funcName := getRuntimeInfo()
 	now := time.Now()
 	run()
-	cost, selcolor := countCostColor(now)
+	cost, selcolor := c.countCostColor(now)
 	if c.condition != nil {
 		if !c.condition(cost) {
 			return
@@ -171,7 +178,7 @@ func (c *CostTime) CostLog(name string, run func()) {
 
 	now := time.Now()
 	run()
-	cost, selcolor := countCostColor(now)
+	cost, selcolor := c.countCostColor(now)
 	if c.condition != nil {
 		if !c.condition(cost) {
 			return
@@ -207,9 +214,9 @@ func (c *CostTime) CostLog(name string, run func()) {
 	}
 }
 
-func countCostColor(now time.Time) (time.Duration, string) {
+func (c *CostTime) countCostColor(now time.Time) (time.Duration, string) {
 	cost := time.Now().Sub(now)
-	return cost, checkLevel(cost).colorstr // fmt.Sprintf(selcolor, cost.Milliseconds())
+	return cost, c.checkLevel(cost).colorstr // fmt.Sprintf(selcolor, cost.Milliseconds())
 }
 
 func getRuntimeInfo() (file string, line int, funcName string) {

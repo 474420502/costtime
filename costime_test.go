@@ -1,6 +1,7 @@
 package costtime
 
 import (
+	"log"
 	"testing"
 	"time"
 )
@@ -83,6 +84,32 @@ func TestTreeLog(t *testing.T) {
 		})
 	})
 
+}
+
+func TestLevel(t *testing.T) {
+	c := New()
+	c.SetEeventCost(func(cost time.Duration) {
+		if cost >= time.Millisecond*100 {
+			log.Println("show")
+		}
+	})
+	c.SetLevel(0, time.Millisecond*500)
+	c.CostLog("name string", func() {
+		time.Sleep(time.Millisecond * 101)
+	})
+}
+
+func TestEvent(t *testing.T) {
+	c := New()
+	c.SetEeventCost(func(cost time.Duration) {
+		if cost >= time.Millisecond*5 {
+			log.Println("show")
+		}
+	})
+
+	c.Cost(func() {
+		time.Sleep(time.Millisecond * 10)
+	})
 }
 
 func TestCond(t *testing.T) {

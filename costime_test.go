@@ -15,6 +15,21 @@ func TestDefault(t *testing.T) {
 	})
 }
 
+func TestEvent(t *testing.T) {
+
+	e := New()
+	e.SetLogCondition(CondGT(100 * time.Millisecond))
+	e.SetEeventCost(func(name string, cost time.Duration) {
+		if name != "event" {
+			t.Error("event")
+		}
+	})
+
+	e.Cost(func() {
+
+	})
+}
+
 func TestBase(t *testing.T) {
 
 	defaultCost.CostLog("name string", func() {
@@ -34,7 +49,7 @@ func TestBase(t *testing.T) {
 	})
 
 	defaultCost.CostLog("name string", func() {
-		time.Sleep(time.Millisecond * 10000)
+		time.Sleep(time.Millisecond * 8000)
 	})
 
 	defaultCost.Cost(func() {
@@ -43,20 +58,23 @@ func TestBase(t *testing.T) {
 }
 
 func TestTreeLog(t *testing.T) {
-	defaultCost.CostLog("name string", func() {
+	defaultCost.CostLog("deep1", func() {
 		time.Sleep(time.Millisecond * 10)
-		defaultCost.CostLog("child string", func() {
+		defaultCost.CostLog("deep2", func() {
+
 			time.Sleep(time.Millisecond * 100)
 			defaultCost.Cost(func() {
 				time.Sleep(time.Millisecond * 100)
 			})
-			defaultCost.CostLog("child string", func() {
+			defaultCost.CostLog("deep3", func() {
 				time.Sleep(time.Millisecond * 100)
 			})
-			defaultCost.CostLog("child string", func() {
+
+			defaultCost.CostLog("deep3-2", func() {
 				time.Sleep(time.Millisecond * 100)
-				defaultCost.CostLog("new child string", func() {
+				defaultCost.CostLog("deep4", func() {
 					time.Sleep(time.Millisecond * 100)
+					In()
 				})
 			})
 

@@ -17,7 +17,7 @@ func TestDefault(t *testing.T) {
 
 func TestEvent(t *testing.T) {
 
-	e := New()
+	e := New("test")
 	e.SetLogCondition(CondGT(100 * time.Millisecond))
 	e.SetEeventCost(func(name string, cost time.Duration) {
 		if name != "event" {

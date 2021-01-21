@@ -1,6 +1,33 @@
 package costtime
 
-var defaultCost *CostTime = New()
+import (
+	"log"
+	"os"
+)
+
+var logDirectory = "costtimelog"
+var logDefaultName = "default"
+
+func init() {
+	info, err := os.Stat(logDirectory)
+	if err != nil {
+		log.Println(err)
+	}
+
+	if info == nil {
+		err = os.Mkdir(logDirectory, os.ModeDir|os.ModeTemporary|os.ModePerm)
+		if err != nil {
+			log.Println(err)
+		}
+	} else {
+		if !info.IsDir() {
+			log.Panicf("%s is exists. and not directory.", logDirectory)
+		}
+	}
+
+}
+
+var defaultCost *CostTime = New(logDefaultName)
 
 // CostLog 计算消耗的时间
 func CostLog(name string, run func()) {

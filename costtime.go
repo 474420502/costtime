@@ -19,22 +19,32 @@ type CostTime struct {
 	eventCost EventFunc
 	condition ConditionFunc
 
-	logprefix     string
+	logprefix string
+
 	costlog       *log.Logger
 	costlogNoDate *log.Logger
 }
 
 // New 创建一个新Cost. 每个协程里都要创建独立一个
-func New() *CostTime {
+func New(fname string) *CostTime {
 	c := &CostTime{}
 	c.logdeep = -1
+
+	file := func() *os.File {
+		f, err := os.OpenFile(fmt.Sprintf("%s/%s.log", logDirectory, fname), os.O_CREATE|os.O_RDWR|os.O_SYNC, 0666)
+		if err != nil {
+			log.Panic(err)
+		}
+		return f
+	}()
+
 	c.costlog = func() *log.Logger {
-		l := log.New(os.Stderr, "", log.Ldate|log.Ltime)
+		l := log.New(file, "", log.Ldate|log.Ltime)
 		return l
 	}()
 
 	c.costlogNoDate = func() *log.Logger {
-		l := log.New(os.Stderr, "", log.Ltime)
+		l := log.New(file, "", log.Ltime)
 		return l
 	}()
 	return c

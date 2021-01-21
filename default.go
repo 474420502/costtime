@@ -25,9 +25,10 @@ func init() {
 		}
 	}
 
+	defaultCost = New(logDefaultName)
 }
 
-var defaultCost *CostTime = New(logDefaultName)
+var defaultCost *CostTime
 
 // CostLog 计算消耗的时间
 func CostLog(name string, run func()) {

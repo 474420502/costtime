@@ -26,6 +26,7 @@ func init() {
 	}
 
 	defaultCost = New(logDefaultName)
+	defaultCost.skip = 3
 }
 
 var defaultCost *CostTime

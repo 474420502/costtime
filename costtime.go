@@ -15,6 +15,7 @@ import (
 type CostTime struct {
 	logdeep  int64
 	logfirst int64
+	skip     int
 
 	eventCost EventFunc
 	condition ConditionFunc
@@ -29,6 +30,7 @@ type CostTime struct {
 func New(fname string) *CostTime {
 	c := &CostTime{}
 	c.logdeep = -1
+	c.skip = 2
 
 	file := func() *os.File {
 		f, err := os.OpenFile(fmt.Sprintf("%s/%s.log", logDirectory, fname), os.O_CREATE|os.O_RDWR|os.O_SYNC, 0666)
@@ -132,7 +134,7 @@ func (c *CostTime) Cost(run func()) {
 		atomic.AddInt64(&c.logdeep, -1)
 	}()
 
-	file, line, funcName := getRuntimeInfo()
+	file, line, funcName := c.getRuntimeInfo()
 	now := time.Now()
 	run()
 	cost, selcolor := countCostColor(now)
@@ -173,7 +175,7 @@ func (c *CostTime) CostLog(name string, run func()) {
 		atomic.AddInt64(&c.logdeep, -1)
 	}()
 
-	file, line, funcName := getRuntimeInfo()
+	file, line, funcName := c.getRuntimeInfo()
 
 	now := time.Now()
 	run()
@@ -218,9 +220,9 @@ func countCostColor(now time.Time) (time.Duration, string) {
 	return cost, checkLevel(cost).colorstr // fmt.Sprintf(selcolor, cost.Milliseconds())
 }
 
-func getRuntimeInfo() (file string, line int, funcName string) {
+func (c *CostTime) getRuntimeInfo() (file string, line int, funcName string) {
 
-	pc, file, line, _ := runtime.Caller(3)
+	pc, file, line, _ := runtime.Caller(int(c.skip))
 	funcName = runtime.FuncForPC(pc).Name()
 
 	var i int
